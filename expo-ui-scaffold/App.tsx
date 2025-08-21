@@ -1,5 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { TamaguiProvider, YStack, H3 } from 'tamagui';
 import config from './tamagui.config';
 import './global.css';
@@ -12,7 +13,7 @@ export default function App() {
   const [tab, setTab] = useState<'today' | 'week' | 'settings'>('today');
   return (
     <TamaguiProvider config={config}>
-      <View style={styles.container}>
+      <GestureHandlerRootView style={styles.container}>
         <View style={styles.content}> 
           {tab === 'today' && <TodayScreen />}
           {tab === 'week' && <WeekScreen />}
@@ -30,7 +31,7 @@ export default function App() {
           </YStack>
         </View>
         <StatusBar style="auto" />
-      </View>
+      </GestureHandlerRootView>
     </TamaguiProvider>
   );
 }
