@@ -7,16 +7,18 @@ import './global.css';
 import TodayScreen from './screens/TodayScreen';
 import WeekScreen from './screens/WeekScreen';
 import SettingsScreen from './screens/SettingsScreen';
+import AIScreen from './screens/AIScreen';
 import { useState } from 'react';
 
 export default function App() {
-  const [tab, setTab] = useState<'today' | 'week' | 'settings'>('today');
+  const [tab, setTab] = useState<'today' | 'week' | 'ai' | 'settings'>('today');
   return (
     <TamaguiProvider config={config}>
       <GestureHandlerRootView style={styles.container}>
         <View style={styles.content}> 
           {tab === 'today' && <TodayScreen />}
           {tab === 'week' && <WeekScreen />}
+          {tab === 'ai' && <AIScreen />}
           {tab === 'settings' && <SettingsScreen />}
         </View>
         <View style={styles.tabs}>
@@ -25,6 +27,9 @@ export default function App() {
           </YStack>
           <YStack flex={1} alignItems="center" justifyContent="center" onTouchEnd={() => setTab('week')}>
             <H3>Week</H3>
+          </YStack>
+          <YStack flex={1} alignItems="center" justifyContent="center" onTouchEnd={() => setTab('ai')}>
+            <H3>AI</H3>
           </YStack>
           <YStack flex={1} alignItems="center" justifyContent="center" onTouchEnd={() => setTab('settings')}>
             <H3>Settings</H3>
