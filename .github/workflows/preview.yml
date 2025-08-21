@@ -1,16 +1,22 @@
 name: Preview (Click-to-Link)
 
 on:
-  workflow_dispatch:  # Run from the Actions tab
+  # auto-run whenever Cursor pushes to a preview branch
+  push:
+    branches:
+      - 'preview/**'
+  # still allow manual run from Actions if you ever need it
+  workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   build_and_publish:
     runs-on: ubuntu-latest
 
-    # All "run:" steps execute inside the app folder
+    # All npm steps run inside the app subfolder
     defaults:
       run:
         working-directory: expo-ui-scaffold
@@ -30,11 +36,28 @@ jobs:
         run: npm ci
 
       - name: Build Expo web
-        run: npm run build:web
+        env:
+          EXPO_PUBLIC_PREVIEW: "1"
+        run: npm run build:web  # -> expo-ui-scaffold/dist
 
-      # Publish the built site to GitHub Pages
-      - name: Publish to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./expo-ui-scaffold/dist
+      - name: Publish to CodeSandbox (static dist)
+        id: csb
+        env:
+          EXPO_PUBLIC_PREVIEW: "1"
+          CSB_STATIC: "1"
+        run: |
+          url=$(node scripts/publishToCodeSandbox.mjs | tail -n 1)
+          echo "url=${url}" >> $GITHUB_OUTPUT
+          echo "🔗 Live Preview: ${url}" >> $GITHUB_STEP_SUMMARY
+
+      # write the link into the repo so it's easy to find from Cursor/GitHub
+      - name: Save latest link to docs/
+        working-directory: .
+        run: |
+          mkdir -p docs
+          echo "${{ steps.csb.outputs.url }}" > docs/latest-demo-url.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/latest-demo-url.txt
+          git commit -m "chore: update preview link [skip ci]" || true
+          git push
