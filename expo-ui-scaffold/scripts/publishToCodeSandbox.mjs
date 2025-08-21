@@ -23,25 +23,24 @@ async function walk(dir, base = '') {
 
 async function main() {
 	const files = await walk(DIST_DIR)
-	// Ensure static template
-	files['sandbox.config.json'] = { content: JSON.stringify({ template: 'static' }) }
 	// Root index.html must exist
 	if (!files['index.html']) {
 		console.error('No index.html found in dist/')
 		process.exit(1)
 	}
 
+	const payload = { files, template: 'static' }
 	const res = await fetch('https://codesandbox.io/api/v1/sandboxes/define?json=1', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ files }),
+		body: JSON.stringify(payload),
 	})
+	const text = await res.text()
 	if (!res.ok) {
-		const txt = await res.text()
-		console.error('Failed to define sandbox:', res.status, txt)
+		console.error('Failed to define sandbox:', res.status, text)
 		process.exit(1)
 	}
-	const json = await res.json()
+	const json = JSON.parse(text)
 	const id = json.sandbox_id || json.data?.sandbox_id
 	if (!id) {
 		console.error('No sandbox_id in response:', JSON.stringify(json))
@@ -55,4 +54,3 @@ main().catch((err) => {
 	console.error(err)
 	process.exit(1)
 })
-
