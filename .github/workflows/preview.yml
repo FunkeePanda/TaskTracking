@@ -1,0 +1,63 @@
+name: Preview (Click-to-Link)
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  build_and_publish:
+    if: contains(github.event.comment.body, '/preview')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build Expo Web (preview)
+        env:
+          EXPO_PUBLIC_PREVIEW: "1"
+        run: npm run build:web
+
+      - name: Publish to CodeSandbox (static)
+        id: csb
+        env:
+          EXPO_PUBLIC_PREVIEW: "1"
+          CSB_STATIC: "1"
+        run: |
+          url=$(npm run -s publish:csb:static)
+          echo "url=${url}" >> $GITHUB_OUTPUT
+          echo "${url}" > latest-demo-url.txt
+
+      - name: Save latest link in repo (docs/latest-demo-url.txt)
+        run: |
+          mkdir -p docs
+          cp latest-demo-url.txt docs/latest-demo-url.txt
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add docs/latest-demo-url.txt
+            git commit -m "chore: update latest demo link"
+            git push
+          fi
+
+      - name: Reply here with the link
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = '${{ steps.csb.outputs.url }}';
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.issue.number,
+              body: `🚀 **Live Preview:** ${url}\n_(zero-login, mobile-friendly)_`
+            });
