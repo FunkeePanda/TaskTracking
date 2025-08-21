@@ -3,6 +3,7 @@ name: Preview (Click-to-Link)
 on:
   issue_comment:
     types: [created]
+  workflow_dispatch:
 
 jobs:
   build_and_publish:
