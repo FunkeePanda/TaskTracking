@@ -1,0 +1,42 @@
+name: Preview (Instant Link)
+on:
+  workflow_dispatch:          # manual run button
+  push:
+    branches:
+      - "preview/**"          # auto when pushing preview/* branches
+jobs:
+  hello_preview:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Create minimal site payload
+        run: |
+          cat > payload.json << 'JSON'
+          {
+            "files": {
+              "index.html": {
+                "content": "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'><title>It works</title><style>body{font:16px system-ui;margin:0;padding:24px} .card{max-width:560px;margin:auto;padding:24px;border-radius:16px;box-shadow:0 4px 24px rgba(0,0,0,.1)} .pill{display:inline-block;padding:4px 10px;border-radius:999px;background:#eef}</style></head><body><div class='card'><h1>✅ Live Preview</h1><p>This is your instant test link. Mobile-friendly, no login.</p><p class='pill'>Step 1 success</p></div></body></html>"
+              }
+            }
+          }
+          JSON
+      - name: Publish to CodeSandbox
+        id: csb
+        run: |
+          url=$(curl -s -X POST -H 'content-type: application/json' \
+            --data @payload.json \
+            'https://codesandbox.io/api/v1/sandboxes/define?json=1' \
+            | node -e "let s='';process.stdin.on('data',d=>s+=d);process.stdin.on('end',()=>{const j=JSON.parse(s);if(!j.sandbox_id&&!j.sandboxId){process.exit(2)};console.log('https://'+(j.sandbox_id||j.sandboxId)+'.csb.app')})")
+          echo "url=${url}" >> $GITHUB_OUTPUT
+          echo "🔗 Live Preview: ${url}" >> $GITHUB_STEP_SUMMARY
+          echo "${url}" > latest-demo-url.txt
+      - name: Commit latest link to repo root (docs/latest-demo-url.txt)
+        run: |
+          mkdir -p docs
+          cp latest-demo-url.txt docs/latest-demo-url.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/latest-demo-url.txt || true
+          git commit -m "chore: update preview link [skip ci]" || true
+          git push || true
