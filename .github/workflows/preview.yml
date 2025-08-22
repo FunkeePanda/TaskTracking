@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - name: Create minimal site payload
         run: |
           cat > payload.json << 'JSON'
